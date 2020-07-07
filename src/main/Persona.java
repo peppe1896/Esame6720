@@ -8,6 +8,7 @@ public class Persona extends Thread
     int attempts = 0;
     float totalDistance = 0.f;
    // MoveRequest mv;
+    boolean requestDone = true;
 
     Persona(int id, SharedPosition positions)
     {
@@ -31,17 +32,23 @@ public class Persona extends Thread
         {
             while (true)
             {
-                float[] nextPos = generateNewPos();
-                float[] currentPos = positions.getPosition(id);
-                totalDistance += positions.distance(nextPos, currentPos);
-                if(positions.move(id, nextPos))
-                    attempts++;
-                changePos++;
+                // System.out.println("Request Done: "+ requestDone);
+                if (requestDone)
+                {
+                    requestDone = false;
+                    float[] nextPos = generateNewPos();
+                    float[] currentPos = positions.getPosition(id);
+                    totalDistance += positions.distance(nextPos, currentPos);
+                    System.out.println(getName() + " genera nuova richiesta!");
+                    positions.sendRequest(new MoveRequest(id, nextPos, this));
+                    changePos++;
+                }
                 sleep(100);
             }
         }
         catch (InterruptedException e)
         {
+            positions.interrupt();
             System.out.println("Nome: "+getName()+"\nCambi: "+changePos+"\nAttese: "+attempts+"\nDistanza: "+totalDistance);
         }
     }

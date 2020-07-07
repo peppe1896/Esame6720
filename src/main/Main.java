@@ -4,7 +4,7 @@ public class Main
 {
     public static void main(String[] args) throws InterruptedException
     {
-        int N = 3;
+        int N = 100;
         SharedPosition sp = new SharedPosition(N);
         Persona[] p = new Persona[N];
         sp.start();

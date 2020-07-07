@@ -1,17 +1,38 @@
 package main;
 
+import com.sun.jdi.InternalException;
+
 import java.util.ArrayList;
 
 public class SharedPosition extends Thread
 {
     ArrayList<float[]> positions;
-    ArrayList<Persona> personas;
-    boolean hasWaited = false;
-    int waitingForMove = 0;
+    ArrayList<MoveRequest> requests;
+    boolean isWorking = false;
 
     SharedPosition(int N)
     {
         positions = new ArrayList<>(N);
+        requests = new ArrayList<>();
+    }
+
+    public synchronized void sendRequest(MoveRequest mv)
+    {
+        System.out.println("Ricevuta una Move request da "+mv.p.getName());
+        requests.add(mv);
+        notifyAll();
+    }
+
+    public synchronized MoveRequest getNextRequest() throws InterruptedException
+    {
+        while(isWorking || requests.size() == 0)
+        {
+            System.out.println("In attesa per mandare nuova request");
+            wait();
+        }
+        MoveRequest temp = requests.remove(0);
+        System.out.println("Ok->mando la richiesta di "+temp.p.getName());
+        return temp;
     }
 
     public void addPerson(int id)
@@ -19,42 +40,44 @@ public class SharedPosition extends Thread
         positions.add(id, new float[]{0,0});
     }
 
-    public void addPerson(Persona p)
-    {
-        //positions.add(id, new float[]{0,0});
-        ;
-    }
 
-    public synchronized boolean move(int id, float[] position) throws InterruptedException
+    public synchronized void move(MoveRequest mv) throws InterruptedException
     {
         // System.out.println("Sopra");
-        while(isNear(id) && !(waitingForMove==3))
+        int id = mv.id;
+        float[] position = mv.newPos;
+
+        while(isNear(mv.id))
         {
-            hasWaited = true;
             System.out.println("Dentro");
             wait();
         }
+
         System.out.println("Sotto");
         positions.set(id, position);
-        boolean temp = hasWaited;
-        hasWaited = false;
         notifyAll();
-        return temp;
     }
 
-    public synchronized boolean isNear(int id)
+    public boolean isNear(int id)
     {
         for (int i=0;i<positions.size();i++)
-            if(i!=id) {
-                System.out.println("QUI");
-                if (!(Math.abs(distance(positions.get(id), (positions.get(i)))) <= 1)) {
-                    System.out.println("QUI2->"+distance(positions.get(id), (positions.get(i))));
-                    waitingForMove++;
+            if(i != id) {
+                if ((Math.abs(distance(positions.get(id), (positions.get(i)))) <= 1)) {
+                    System.out.println("IS NEAR:" + Math.abs(distance(positions.get(id), (positions.get(i)))));
                     return true;
                 }
             }
-        waitingForMove++;
-        System.out.println("QUI3");
+        return false;
+    }
+
+    public boolean isNear(MoveRequest mv)
+    {
+        for (int i=0;i<positions.size();i++)
+            if(i != mv.id) {
+                if ((Math.abs(distance(positions.get(mv.id), (mv.newPos))) <= 1)) {
+                    return true;
+                }
+            }
         return false;
     }
 
@@ -63,15 +86,43 @@ public class SharedPosition extends Thread
         return (float) Math.sqrt((a[0]*a[0]-b[0]*b[0])+(a[1]*a[1]+b[1]*b[1]));
     }
 
-    public float[] getPosition(int id)
+    public synchronized float[] getPosition(int id)
     {
-        return positions.get(id);
+        float[] temp = positions.get(id);
+        System.out.println("Mando la pos di "+id + ":"+ temp[0]+", "+temp[1]);
+        return temp;
     }
 
-    private synchronized void callNotify()
+    public synchronized void solveRequest(MoveRequest mv) throws InterruptedException
     {
+        if (!isNear(mv))
+        {
+            positions.set(mv.id, mv.newPos);
+            mv.isDone = true;
+        }
+        else
+        {
+            System.out.println("Ho atteso, mannaggia");
+            mv.hasWaited = true;
+        }
+        if(!mv.isDone)
+        {
+            sendRequest(mv); // ritorna dentro la queue
+            System.out.println("Ritorna dentro la queue!");
+        }
+        else {
+            if (mv.hasWaited)
+            {
+                System.out.println("HO ATTESO");
+                mv.p.attempts = mv.p.attempts + 1;
+            }
+            mv.p.requestDone = true; // risolta, persona puà fare una nuova richiesta
+            System.out.println("Risolta la move request.");
+            isWorking = false;
+        }
         notifyAll();
     }
+
 
     public void run()
     {
@@ -79,17 +130,34 @@ public class SharedPosition extends Thread
         {
             while (true)
             {
-                if (waitingForMove == 3)
-                {
-                    waitingForMove = 0;
-                    notifyAll();
-                }
+                MoveRequest temp = getNextRequest();
+                solveRequest(temp);
+                //if (waitingForMove == 2)
+                //{
+                //    waitingForMove = 0;
+                //    notifyAll();
+                //}
                 // callNotify();
+
                 sleep(100);
             }
-        }catch (InterruptedException e)
+        }
+        catch (InterruptedException e)
         {
-
+            System.out.println("Terminazione di SharedPosition");
+            while(!requests.isEmpty())
+            {
+                MoveRequest mv = requests.remove(0);
+                if(!isNear(mv))
+                {
+                    positions.set(mv.id, mv.newPos);
+                }
+                mv.isDone = true;
+                if (mv.hasWaited)
+                    mv.p.attempts++;
+                mv.p.requestDone = true; // risolta, persona puà fare una nuova richiesta
+                System.out.println("Risolta la move request.");
+            }
         }
     }
 
