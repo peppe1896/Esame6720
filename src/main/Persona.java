@@ -1,6 +1,5 @@
 package main;
 
-import static main.SharedPosition.distance;
 
 public class Persona extends Thread
 {
@@ -49,15 +48,13 @@ public class Persona extends Thread
                 {
                     requestDone = false;
                     float[] nextPos = generateNewPos();
-                    float[] currentPos = positions.getPosition(id);
-                    totalDistance += distance(nextPos, currentPos);
+
                     // System.out.println("----"+positions.distance(nextPos, currentPos));
                     // System.out.println("Distanza totale di "+ getName()+" :"+(float)totalDistance);
-                    System.out.println(getName() + " genera nuova richiesta!");
+                    //System.out.println(getName() + " genera nuova richiesta!");
                     positions.sendRequest(new MoveRequest(id, nextPos, this));
                 }
-                actualPosition = positions.getPosition(id);
-                sleep(10);
+                sleep(100);
             }
         }
         catch (InterruptedException e)

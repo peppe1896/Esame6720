@@ -13,7 +13,7 @@ public class Main
             p[i] = new Persona(i, sp);
             p[i].start();
         }
-        Thread.sleep(100000);
+        Thread.sleep(60000);
         for(Persona pp:p)
             pp.requestInterrupt = true;
 
