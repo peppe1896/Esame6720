@@ -16,14 +16,6 @@ public class MoveRequest
         this.p = p;
     }
 
-    public MoveRequest(MoveRequest mv)
-    {
-        id = mv.id;
-        newPos = mv.newPos;
-        isDone = mv.isDone;
-        p = mv.p;
-        hasWaited = mv.hasWaited;
-    }
 
     public String toString()
     {
