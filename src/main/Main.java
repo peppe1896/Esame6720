@@ -4,7 +4,7 @@ public class Main
 {
     public static void main(String[] args) throws InterruptedException
     {
-        int N = 100;
+        int N = 10;
         SharedPosition sp = new SharedPosition(N);
         Persona[] p = new Persona[N];
         sp.start();
@@ -13,8 +13,14 @@ public class Main
             p[i] = new Persona(i, sp);
             p[i].start();
         }
-        Thread.sleep(5000);
+        Thread.sleep(100000);
+        for(Persona pp:p)
+            pp.requestInterrupt = true;
+
+        sp.interrupt();
+
         for(Persona pp:p)
             pp.interrupt();
+        //Thread.sleep(10000);
     }
 }

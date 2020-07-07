@@ -1,5 +1,7 @@
 package main;
 
+import static main.SharedPosition.distance;
+
 public class Persona extends Thread
 {
     int id;
@@ -7,15 +9,17 @@ public class Persona extends Thread
     int changePos = 0;
     int attempts = 0;
     float totalDistance = 0.f;
-   // MoveRequest mv;
     boolean requestDone = true;
+    boolean requestInterrupt = false;
+    float[] actualPosition;
 
     Persona(int id, SharedPosition positions)
     {
         this.id = id;
         this.positions = positions;
-        this.positions.addPerson(id);
+        this.positions.addPerson(id, this);
         this.setName("P-"+id);
+        this.actualPosition = new float[]{0.f,0.f};
     }
 
     private float[] generateNewPos()
@@ -26,6 +30,14 @@ public class Persona extends Thread
         return ret;
     }
 
+    public void endRequest(MoveRequest mv)
+    {
+        if(mv.hasWaited)
+            attempts++;
+        changePos++;
+        requestDone = true;
+    }
+
     public void run()
     {
         try
@@ -33,23 +45,25 @@ public class Persona extends Thread
             while (true)
             {
                 // System.out.println("Request Done: "+ requestDone);
-                if (requestDone)
+                if (requestDone && !requestInterrupt)
                 {
                     requestDone = false;
                     float[] nextPos = generateNewPos();
                     float[] currentPos = positions.getPosition(id);
-                    totalDistance += positions.distance(nextPos, currentPos);
+                    totalDistance += distance(nextPos, currentPos);
+                    // System.out.println("----"+positions.distance(nextPos, currentPos));
+                    // System.out.println("Distanza totale di "+ getName()+" :"+(float)totalDistance);
                     System.out.println(getName() + " genera nuova richiesta!");
                     positions.sendRequest(new MoveRequest(id, nextPos, this));
-                    changePos++;
                 }
-                sleep(100);
+                actualPosition = positions.getPosition(id);
+                sleep(10);
             }
         }
         catch (InterruptedException e)
         {
-            positions.interrupt();
-            System.out.println("Nome: "+getName()+"\nCambi: "+changePos+"\nAttese: "+attempts+"\nDistanza: "+totalDistance);
+            System.out.println("Nome: "+getName()+"\nCambi: "+changePos+"\nAttese: "+attempts+"\nDistanza: "+totalDistance +
+                    "\nPosizione finale: "+actualPosition[0]+", "+actualPosition[1]+"\n");
         }
     }
 
