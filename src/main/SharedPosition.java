@@ -1,121 +1,71 @@
 package main;
 
-import java.util.ArrayList;
+public class SharedPosition extends Thread {
+    Persona[] people;                   // Persone; l'id della persona corrisponde a indice array
+    SharedBuffer buffer;
 
-public class SharedPosition extends Thread
-{
-    ArrayList<MoveRequest> requests;
-    Persona[] p;
-    int size = 0;
-
-    SharedPosition(int N)
-    {
-        requests = new ArrayList<>();
-        p = new Persona[N];
+    SharedPosition(Persona[] persone, SharedBuffer sharedBuffer ) {
+        this.buffer = sharedBuffer;
+        people = persone;
     }
 
-    public synchronized void sendRequest(MoveRequest mv)
-    {
-        System.out.println("Ricevuta richiesta da P-"+mv.id+". Dim di queue:"+requests.size());
-        requests.add(mv);
-        ++size;
-        notifyAll();
+    public void addPerson(int id, Persona p) {
+        this.people[id] = p;
     }
 
-    public synchronized MoveRequest getNextRequest() throws InterruptedException
-    {
-        while(size == 0)
-            wait();
-        MoveRequest temp = requests.remove(0);
-        System.out.println("Prelevo la richiesta di "+temp.p.getName());
-        --size;
-        return temp;
+    public float distance(float[] a, float[] b) {
+        float f = (float)Math.sqrt((((b[0]-a[0])*(b[0]-a[0]))+((b[1]-a[1])*(b[1]-a[1]))));
+        return f;
     }
 
-    public void addPerson(int id, Persona p)
-    {
-        // positions.add(id, new float[]{0,0});
-        // positions[id] = new float[]{0,0};
-        this.p[id] = p;
-    }
-
-    public synchronized boolean isNear(MoveRequest mv)
-    {
-        // for (int i=0;i<positions.size();i++)
-        for (int i=0;i<p.length;i++)
-            if(i != mv.id) {
-                if ((Math.abs(distance(p[mv.id].actualPosition, (mv.newPos))) <= 1)) {
-                    return true;
-                }
+    public synchronized void solveRequest(MoveRequest mv){
+        boolean isNear = false;
+        Persona persona;
+        int i = people.length - 1;
+        while(i > 0){
+            if(i != mv.id){
+                persona = people[i];
+                float distance = distance(persona.actualPosition, mv.newPos);
+                if(distance <= 1)
+                    isNear = true;
             }
-        return false;
-    }
-
-    public float distance(float[] a, float[] b)
-    {
-        return (float) Math.sqrt(((a[0]*a[0])-(b[0]*b[0]))+((a[1]*a[1])+(b[1]*b[1])));
-    }
-
-    public synchronized void solveRequest(MoveRequest mv)
-    {
-        if (!isNear(mv))
-        {
-            //System.out.println("Sposto P-"+mv.id + " in "+mv.newPos[0]+", "+mv.newPos[1]+"\n");
-            p[mv.id].actualPosition = mv.newPos;
-            mv.isDone = true;
-            System.out.println("Posizione di "+mv.id+" :"+p[mv.id].actualPosition[0]+", "+p[mv.id].actualPosition[1]);
+            i--;
         }
+        if(!isNear){
+            System.out.println("Aggiornando la posizione di P-"+mv.id);
+            people[mv.id].totalDistance += distance(mv.newPos, people[mv.id].actualPosition);
+            people[mv.id].countWaitingForChange = people[mv.id].countWaitingForChange + mv.countAttempts;
+            people[mv.id].actualPosition = mv.newPos;
+            people[mv.id].countChangePos += 1;
+            people[mv.id].endRequest();
+        }else{
+            mv.countAttempts += 1;
+            System.out.println("Reinserisco la richiesta di P-"+mv.id+". Attualmente reinvio numero: "+ mv.countAttempts);
+            buffer.receiveRequest(mv);
+        }
+    }
+
+    public synchronized void forceSolveRequest(MoveRequest mv){
+        if(mv.countAttempts<=100)
+            solveRequest(mv);
         else
-        {
-            mv.hasWaited = true;
-            p[mv.id].attempts += 1;
-        }
-        if(!mv.isDone)
-        {
-            mv.count = mv.count + 1;
-            if (mv.count < 3)
-                sendRequest(mv);
-            else
-                mv.isDone = true;
-            //System.out.println("Rimetto dentro la queue la richiesta di p-"+mv.id);
-            //System.out.println("Dimensione queue "+requests.size());
-        }
-        else
-        {
-            p[mv.id].changePos = p[mv.id].changePos + 1;
-            // p[mv.id].endRequest(mv);
-            p[mv.id].totalDistance += distance(mv.newPos, p[mv.id].actualPosition);
-            p[mv.id].requestDone = true; // risolta, persona puà fare una nuova richiesta
-            //System.out.println("Risolta la move request "+mv+ "\nOra P-"+mv.id+" genera nuova richiesta");
-        }
-
-        // notify();
+            people[mv.id].endRequest();
     }
 
-
-    public void run()
-    {
-        try
-        {
-            while (true)
-            {
-                if(requests.size()< 1)
-                    sleep(3000);
-                MoveRequest temp = getNextRequest();
-                solveRequest(temp);
-                sleep(30);
+    public void run() {
+        try {
+            while (true) {
+                MoveRequest temp = buffer.getRequest();
+                if (temp != null)
+                    solveRequest(temp);
+                sleep(100);
             }
-        }
-        catch (InterruptedException e)
-        {
-            System.out.println("\nTerminazione di SharedPosition. Numero di elementi in coda: "+ requests.size() +"\n");
-            while(!requests.isEmpty())
-            {
-                MoveRequest mv = requests.remove(0);
-                p[mv.id].actualPosition = mv.newPos;
-                // risolta, persona puà fare una nuova richiesta
-                p[mv.id].endRequest(mv);
-                System.out.println("Risolta la move request "+mv);
+        } catch (InterruptedException e) {
+            System.out.println("\nTerminazione di SharedPosition");
+            while(!buffer.isEmpty()) {
+                try {
+                    forceSolveRequest(buffer.getRequest());
+                } catch (InterruptedException interruptedException) {}
             }
             System.out.println("Shared Position Interrupted.");
         }

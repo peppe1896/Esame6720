@@ -1,26 +1,21 @@
 package main;
 
-public class Main
-{
-    public static void main(String[] args) throws InterruptedException
-    {
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
         int N = 10;
-        SharedPosition sp = new SharedPosition(N);
-        Persona[] p = new Persona[N];
-        sp.start();
-        for(int i=0;i<N;i++)
-        {
-            p[i] = new Persona(i, sp);
-            p[i].start();
+        Persona[] persone = new Persona[N];
+        SharedBuffer sharedBuffer = new SharedBuffer();
+        SharedPosition sharedPosition = new SharedPosition(persone, sharedBuffer);
+        sharedPosition.start();
+        for(int i=0;i<N;i++) {
+            persone[i] = new Persona(i, sharedBuffer, sharedPosition);
+            persone[i].start();
         }
-        Thread.sleep(60000);
-        for(Persona pp:p)
-            pp.requestInterrupt = true;
-
-        sp.interrupt();
-
-        for(Persona pp:p)
+        Thread.sleep(30000);
+        System.out.println("\n\n---\n Interrupt dei threads Persona\n---");
+        for(Persona pp:persone)
             pp.interrupt();
-        //Thread.sleep(10000);
+        System.out.println("\n\n---\n Interrupt del thread SharedPosition\n---");
+        sharedPosition.interrupt();
     }
 }

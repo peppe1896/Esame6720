@@ -1,24 +1,15 @@
 package main;
 
-public class MoveRequest
-{
+public class MoveRequest {
     int id;
     float[] newPos;
-    Persona p;
-    boolean isDone = false;
-    boolean hasWaited = false;
-    int count = 0;
+    Persona persona;
+    int countAttempts = 0;                      // Numero di volte che non è stata cambiata la posizione
 
-    MoveRequest(int id, float[] newPos, Persona p)
-    {
+    MoveRequest(int id, float[] newPos, Persona persona) {
         this.id = id;
         this.newPos = newPos;
-        this.p = p;
+        this.persona = persona;
     }
 
-
-    public String toString()
-    {
-        return "\n\nid " + id + "\nisDone: "+ isDone + "\nhasWaited: " + hasWaited + "\n\n";
-    }
 }
