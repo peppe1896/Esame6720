@@ -16,15 +16,9 @@ public class SharedBuffer {
         while(actualSize == 0)
             wait();
         actualSize--;
+        System.out.print("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tRichieste nel buffer: "+actualSize+"\n");
         MoveRequest returnRequest = requests.remove(0);
         return returnRequest;
-    }
-
-    public synchronized ArrayList<MoveRequest> getRequestRemaining(){
-        ArrayList<MoveRequest> returnRequests = new ArrayList<>();
-        while(!requests.isEmpty())
-            returnRequests.add(requests.remove(0));
-        return returnRequests;
     }
 
     public synchronized boolean isEmpty(){

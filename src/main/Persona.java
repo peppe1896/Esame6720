@@ -27,21 +27,22 @@ public class Persona extends Thread {
     }
 
     public synchronized void endRequest() {
-        /*this.totalDistance += distance(mv.newPos, actualPosition);
-        this.countWaitingForChange += mv.countAttempts;
-        this.actualPosition = mv.newPos;
-        this.countChangePos += 1;*/
         requestDone = true;
+        notify();
+    }
+
+    synchronized void performNewRequest() throws InterruptedException{
+        while(!requestDone)
+            wait();
+        requestDone = false;
+        float[] nextPos = generateNewPos();
+        buffer.receiveRequest(new MoveRequest(id, nextPos, this));
     }
 
     public void run() {
         try {
             while (true) {
-                if (requestDone) {
-                    requestDone = false;
-                    float[] nextPos = generateNewPos();
-                    buffer.receiveRequest(new MoveRequest(id, nextPos, this));
-                }
+                performNewRequest();
                 sleep(100);
             }
         } catch (InterruptedException e) {

@@ -22,7 +22,7 @@ public class SharedPosition extends Thread {
         boolean isNear = false;
         Persona persona;
         int i = people.length - 1;
-        while(i > 0){
+        while(i >= 0){
             if(i != mv.id){
                 persona = people[i];
                 float distance = distance(persona.actualPosition, mv.newPos);
@@ -46,28 +46,28 @@ public class SharedPosition extends Thread {
     }
 
     public synchronized void forceSolveRequest(MoveRequest mv){
-        if(mv.countAttempts<=100)
+        if(mv.countAttempts<100)
             solveRequest(mv);
-        else
+        else {
             people[mv.id].endRequest();
+            System.out.println("Chiusura forzata della richiesta di P-"+mv.id);
+        }
     }
 
     public void run() {
         try {
             while (true) {
                 MoveRequest temp = buffer.getRequest();
-                if (temp != null)
-                    solveRequest(temp);
+                solveRequest(temp);
                 sleep(100);
             }
         } catch (InterruptedException e) {
-            System.out.println("\nTerminazione di SharedPosition");
+            System.out.println("---\nTerminazione di SharedPosition, consumando le MoveRequest rimaste nel buffer\n---");
             while(!buffer.isEmpty()) {
                 try {
                     forceSolveRequest(buffer.getRequest());
                 } catch (InterruptedException interruptedException) {}
             }
-            System.out.println("Shared Position Interrupted.");
         }
     }
 
