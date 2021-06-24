@@ -16,10 +16,9 @@ public class Persona extends Thread {
         this.setName("P-"+id);
         this.actualPosition = new float[]{0.f,0.f};
         this.sharedPosition = sharedPosition;
-        this.sharedPosition.addPerson(id, this);
     }
 
-    private synchronized float[] generateNewPos() throws InterruptedException{
+    private synchronized float[] generateNewPos(){
         float[] ret = new float[2];
         ret[0] = (float) ((Math.random()*20.f)-10.f);
         ret[1] = (float) ((Math.random()*20.f)-10.f);

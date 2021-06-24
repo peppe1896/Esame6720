@@ -9,10 +9,6 @@ public class SharedPosition extends Thread {
         people = persone;
     }
 
-    public void addPerson(int id, Persona p) {
-        this.people[id] = p;
-    }
-
     public float distance(float[] a, float[] b) {
         float f = (float)Math.sqrt((((b[0]-a[0])*(b[0]-a[0]))+((b[1]-a[1])*(b[1]-a[1]))));
         return f;

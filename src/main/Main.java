@@ -2,7 +2,7 @@ package main;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        int N = 100;
+        int N = 10;
         Persona[] persone = new Persona[N];
         SharedBuffer sharedBuffer = new SharedBuffer();
         SharedPosition sharedPosition = new SharedPosition(persone, sharedBuffer);
