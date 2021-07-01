@@ -3,19 +3,17 @@ package main;
 public class Persona extends Thread {
     int id;
     private SharedBuffer buffer;
-    private SharedPosition sharedPosition;
     int countWaitingForChange = 0;
     int countChangePos = 0;
     float totalDistance = 0.f;
     boolean requestDone = true;             // Se attualmente la persona sta aspettando di essere spostata
     float[] actualPosition;
 
-    Persona(int id, SharedBuffer buffer, SharedPosition sharedPosition) {
+    Persona(int id, SharedBuffer buffer) {
         this.id = id;
         this.buffer = buffer;
         this.setName("P-"+id);
         this.actualPosition = new float[]{0.f,0.f};
-        this.sharedPosition = sharedPosition;
     }
 
     private synchronized float[] generateNewPos(){
@@ -42,7 +40,6 @@ public class Persona extends Thread {
         try {
             while (true) {
                 performNewRequest();
-                sleep(100);
             }
         } catch (InterruptedException e) {
             System.out.println("Nome: "+getName()+"\nNumero di cambi di posizione: "+ countChangePos +"\n" +

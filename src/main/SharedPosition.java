@@ -42,11 +42,11 @@ public class SharedPosition extends Thread {
     }
 
     public synchronized void forceSolveRequest(MoveRequest mv){
-        if(mv.countAttempts<100)
+        if(mv.countAttempts<30)
             solveRequest(mv);
         else {
             people[mv.id].endRequest();
-            System.out.println("Chiusura forzata della richiesta di P-"+mv.id);
+            // System.out.println("Chiusura forzata della richiesta di P-"+mv.id);
         }
     }
 
